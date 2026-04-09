@@ -132,10 +132,12 @@ export async function POST(request: NextRequest) {
         .from("amazon_accounts")
         .update({
           amazon_email: email,
-          refresh_token_encrypted: tokens.refresh_token, // In production, encrypt this
-          access_token_encrypted: tokens.access_token, // In production, encrypt this
+          refresh_token: tokens.refresh_token,
+          access_token: tokens.access_token,
           device_id: deviceId,
-          last_token_refresh: new Date().toISOString(),
+          status: "active",
+          last_verified_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
         })
         .eq("id", existingAccount.id);
 
@@ -149,10 +151,11 @@ export async function POST(request: NextRequest) {
         .insert({
           user_id: user.id,
           amazon_email: email,
-          refresh_token_encrypted: tokens.refresh_token,
-          access_token_encrypted: tokens.access_token,
+          refresh_token: tokens.refresh_token,
+          access_token: tokens.access_token,
           device_id: deviceId,
-          last_token_refresh: new Date().toISOString(),
+          status: "active",
+          last_verified_at: new Date().toISOString(),
         });
 
       if (insertError) {
@@ -163,8 +166,9 @@ export async function POST(request: NextRequest) {
     // Log activity
     await supabase.from("activity_logs").insert({
       user_id: user.id,
-      action: "account_linked",
-      details: `Amazon account ${email} linked successfully`,
+      event_type: "info",
+      message: `Amazon account ${email} linked successfully`,
+      metadata: { amazon_email: email },
     });
 
     return NextResponse.json({ success: true });
